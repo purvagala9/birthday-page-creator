@@ -175,6 +175,26 @@
         grid-column: 1;
       }
       .row{ grid-template-columns: 1fr}
+      /* Fix mobile viewport issues for long messages */
+      body {
+        padding: 12px;
+        align-items: flex-start;
+      }
+      .preview iframe {
+        height: 600px;
+      }
+    }
+    /* Additional mobile fixes for very small screens */
+    @media (max-width: 480px) {
+      body {
+        padding: 8px;
+      }
+      .card {
+        padding: 12px;
+      }
+      textarea {
+        min-height: 80px;
+      }
     }
   </style>
 </head>
@@ -209,7 +229,7 @@
           <input type="text" id="heading" placeholder="Happy Birthday! 🎉" value="Happy Birthday! 🎉" />
 
           <label for="message">Special Message</label>
-          <textarea id="message" placeholder="Write a heartfelt wish..." required></textarea>
+          <textarea id="message" rows="4" placeholder="Write a heartfelt wish..." ></textarea>
 
           <label for="image">Choose a birthday image</label>
           <input type="file" id="image" accept="image/*" required />
@@ -219,6 +239,17 @@
           <label for="music">Choose background music (optional)</label>
           <input type="file" id="music" accept="audio/*" />
           <div class="helper">Add a background music file that will play when the birthday page loads.</div>
+          
+          <!-- Added music preview controls in form area only -->
+          <div class="music-controls" style="margin-top: 10px; text-align: center;">
+            <audio id="previewMusic" controls style="display: none; width: 100%; max-width: 300px;">
+              <source id="musicSource" src="" type="audio/mpeg">
+              Your browser does not support the audio element.
+            </audio>
+            <div id="musicPreviewLabel" style="font-size: 0.9rem; color: #666; margin-top: 5px; display: none;">
+              🎵 Music Preview (this won't show in the final birthday page)
+            </div>
+          </div>
         </section>
 
         <section class="card">
@@ -274,10 +305,11 @@
           <h3>🎊 Confetti</h3>
           <label for="confettiDuration">Confetti Duration (seconds)</label>
           <select id="confettiDuration">
-            <option value="3">3</option>
-            <option value="5" selected>5</option>
-            <option value="8">8</option>
-            <option value="12">12</option>
+            
+            <option value="5">5</option>
+            <option value="8" selected>8</option>
+            <option value="11">11</option>
+            <option value="15">15</option>
           </select>
           <label for="confettiDensity">Confetti Density</label>
           <select id="confettiDensity">
@@ -306,12 +338,6 @@
       <div class="preview card">
         <h2>🔎 Live Preview</h2>
         <iframe id="previewFrame" title="Birthday page preview"></iframe>
-        <div class="music-controls">
-          <audio id="previewMusic" controls style="display: none;">
-            <source id="musicSource" src="" type="audio/mpeg">
-            Your browser does not support the audio element.
-          </audio>
-        </div>
       </div>
     </div>
   </div>
@@ -326,6 +352,7 @@
       const previewFrame = $("#previewFrame");
       const previewMusic = $("#previewMusic");
       const musicSource = $("#musicSource");
+      const musicPreviewLabel = $("#musicPreviewLabel");
 
       // Accessibility: announce errors
       function announce(msg){
@@ -402,7 +429,7 @@
     this.opts = Object.assign({
       count: 220,
       gravity: 0.35,
-      terminalVelocity: 5,
+      terminalVelocity: 8,
       drag: 0.075,
       shapes: ['square','circle','triangle'],
       colors: ['#f87171','#fb923c','#facc15','#34d399','#60a5fa','#a78bfa','#f472b6','#2dd4bf']
@@ -422,8 +449,8 @@
     return {
       x: this.w/2 + this._rand(-this.w*0.1, this.w*0.1),
       y: -20 + this._rand(-20, 20),
-      w: this._rand(6,14),
-      h: this._rand(6,14),
+      w: this._rand(8,12),
+      h: this._rand(8,12),
       vx: Math.cos(angle)*spread,
       vy: Math.sin(angle)*spread + this._rand(2,4),
       color: this.opts.colors[ (Math.random()*this.opts.colors.length)|0 ],
@@ -479,6 +506,8 @@
 
   document.addEventListener('DOMContentLoaded', function(){
     const canvas = document.getElementById('confetti-canvas');
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
     const confetti = new Confetti(canvas, { count: ${confettiCount} });
     let running = true;
     function loop(){
@@ -528,10 +557,11 @@
                   radial-gradient(1000px 1000px at 90% 20%, rgba(255,255,255,.2), transparent 60%),
                   var(--bg);
       display:flex;
-      align-items:center;
+      align-items:flex-start;
       justify-content:center;
       padding:24px;
       overflow-x:hidden;
+      overflow-y:auto;
     }
     .container{
       width:min(900px, 100%);
@@ -541,6 +571,7 @@
       border:1px solid rgba(255,255,255,.5);
       box-shadow: 0 20px 60px rgba(0,0,0,.25);
       overflow:hidden;
+      margin: auto;
     }
     .header{
       text-align:center;
@@ -575,6 +606,9 @@
     .text{
       padding:10px;
       color:var(--text);
+      /* Added max-height and overflow for long messages */
+      max-height: 400px;
+      overflow-y: auto;
     }
     .to{ opacity:.9; font-weight:600; margin-top:6px }
     .msg{
@@ -582,6 +616,7 @@
       line-height:1.55;
       font-size: var(--fs);
       white-space: pre-wrap;
+      word-wrap: break-word;
     }
     .from{
       opacity:.9;
@@ -601,8 +636,59 @@
       z-index:9999;
     }
     @media (max-width: 820px){
-      .content{ grid-template-columns: 1fr; }
-      .imgWrap img{ aspect-ratio:auto; width:100% }
+      body {
+        align-items: flex-start;
+        padding: 12px;
+      }
+      .container {
+        margin-top: 0;
+      }
+      /* Improved mobile layout to keep image visible */
+      .content{ 
+        grid-template-columns: 1fr;
+        gap: 12px;
+      }
+      .imgWrap {
+        order: -1;
+        padding: 5px;
+      }
+      .imgWrap img{ 
+        aspect-ratio: auto; 
+        max-width: 280px;
+        max-height: 280px;
+        width: auto;
+        height: auto;
+      }
+      .text {
+        max-height: 300px;
+        padding: 5px 10px;
+      }
+      .msg {
+        font-size: calc(var(--fs) * 0.9);
+      }
+    }
+    /* Added extra small screen optimizations */
+    @media (max-width: 480px) {
+      body {
+        padding: 8px;
+      }
+      .container {
+        border-radius: 16px;
+      }
+      .header {
+        padding: 16px 12px 6px;
+      }
+      .content {
+        padding: 12px;
+        gap: 8px;
+      }
+      .imgWrap img {
+        max-width: 240px;
+        max-height: 240px;
+      }
+      .text {
+        max-height: 250px;
+      }
     }
   </style>
 </head>
@@ -650,7 +736,7 @@
             borderWidth: $("#borderwidth").value,
             borderColor: $("#bordercolor").value,
             boxShadow: $("#bordershadow").value,
-            confettiSeconds: parseInt($("#confettiDuration").value, 10) || 5,
+            confettiSeconds: parseInt($("#confettiDuration").value, 10) || 8,
             confettiCount: parseInt($("#confettiDensity").value, 10) || 220,
           };
 
@@ -670,6 +756,7 @@
               </html>
             `;
             previewMusic.style.display = "none";
+            musicPreviewLabel.style.display = "none";
             return;
           }
 
@@ -680,9 +767,11 @@
             opts.musicDataURL = musicDataURL;
             musicSource.src = musicDataURL;
             previewMusic.style.display = "block";
+            musicPreviewLabel.style.display = "block";
             previewMusic.load();
           } else {
             previewMusic.style.display = "none";
+            musicPreviewLabel.style.display = "none";
           }
 
           const html = buildBirthdayHTML(opts);
@@ -748,7 +837,7 @@
             borderWidth: $("#borderwidth").value,
             borderColor: $("#bordercolor").value,
             boxShadow: $("#bordershadow").value,
-            confettiSeconds: parseInt($("#confettiDuration").value, 10) || 5,
+            confettiSeconds: parseInt($("#confettiDuration").value, 10) || 8,
             confettiCount: parseInt($("#confettiDensity").value, 10) || 220,
           };
 
@@ -822,10 +911,11 @@
         $("#borderwidth").value = "0px";
         $("#bordercolor").value = "#ffffff"; 
         $("#bordershadow").value = "none";
-        $("#confettiDuration").value = "5";
+        $("#confettiDuration").value = "8";
         $("#confettiDensity").value = "220";
         previewFrame.src = "";
         previewMusic.style.display = "none";
+        musicPreviewLabel.style.display = "none";
         announce("Form reset.");
       });
 
@@ -846,5 +936,3 @@
   </script>
 </body>
 </html>
-
-
